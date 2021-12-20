@@ -2,7 +2,7 @@
  * @Description: 
  * @Author: yurui
  * @Date: 2021-12-17 19:11:52
- * @LastEditTime: 2021-12-20 13:49:27
+ * @LastEditTime: 2021-12-20 14:34:38
  * @FilePath: /Lidar/src/environment.cpp
  */
 
@@ -39,6 +39,10 @@ int main(){
     //平面分割
     int maxIterations = 40; 
     float distanceThreshold = 0.1;
+    //欧拉聚类
+    float clusterTolerance = 0.5;
+    int minsize = 10;
+    int maxsize = 140;
     //##############################################
     // 点云预处理：体素就近滤波, ROI滤波
     std::cerr << "before filtering" << std::endl;
@@ -51,15 +55,19 @@ int main(){
     PtCdtr<PointT> inPlane_Cloud = segment_resultPair.first;
     // plane_vector.push_back(inPlane_Cloud);
     PtCdtr<PointT> outPlane_Cloud = segment_resultPair.second;
-    
+    // 点云聚类
+    std::vector<PtCdtr<PointT>> clusters = pointProcessorI->cluster(outPlane_Cloud, clusterTolerance, minsize, maxsize);
 
-     // 设置颜色显示
+    // 设置颜色显示
     // pcl::visualization::PointCloudColorHandlerCustom<PointT> rgb(inPlane_Cloud, 255, 0, 0);
     // viewer->addPointCloud<PointT>(inPlane_Cloud, rgb, "sample cloud");
 
     // 根据强度自动调节颜色
     pcl::visualization::PointCloudColorHandlerGenericField<PointT> intensity_distribution(inPlane_Cloud,"intensity");
-    viewer->addPointCloud<PointT>(inPlane_Cloud, intensity_distribution);
+    for(auto cluster_i: clusters){
+        viewer->addPointCloud(cluster_i, intensity_distribution);
+    }
+    // viewer->addPointCloud<PointT>(inPlane_Cloud, intensity_distribution);
 
     while(!viewer->wasStopped()){
         viewer->spinOnce(100);

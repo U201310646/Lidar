@@ -2,7 +2,7 @@
  * @Description: 
  * @Author: yurui
  * @Date: 2021-12-18 13:32:56
- * @LastEditTime: 2021-12-20 13:30:21
+ * @LastEditTime: 2021-12-20 14:41:36
  * @FilePath: /Lidar/include/processPointClouds.hpp
  */
 #pragma once
@@ -16,6 +16,8 @@
 #include <pcl-1.11/pcl/kdtree/kdtree_flann.h>
 #include <pcl-1.11/pcl/segmentation/sac_segmentation.h>
 #include <pcl-1.11/pcl/filters/crop_box.h>
+#include <pcl-1.11/pcl/search/kdtree.h>
+#include <pcl-1.11/pcl/segmentation/extract_clusters.h>
 #include <boost/thread/thread.hpp>
 #include <eigen3/Eigen/Dense>
 #include <memory>
@@ -35,14 +37,15 @@ public:
     PtCdtr<PointT> loadPcd(std::string file);
     std::vector<boost::filesystem::path> streamPcd(std::string dataPath);
     //todo 滤波，分割，聚类，拟合..
-    //体素最近点滤波
+    //对ROI感兴趣区域进行focus，体素最近点滤波
     PtCdtr<PointT> cloud_filter(PtCdtr<PointT> cloud_in, float leaf_size, Eigen::Vector4f minPoint, Eigen::Vector4f maxPoint);
-    // 对ROI感兴趣区域进行focus
     // 平面分割
     std::pair<PtCdtr<PointT>, PtCdtr<PointT>> segment_Plane(PtCdtr<PointT> cloud, int maxIterations, float distanceThreshold);
     std::pair<PtCdtr<PointT>, PtCdtr<PointT>> segment_Indices(PtCdtr<PointT> cloud, pcl::PointIndices::Ptr ind);
+    // 点云聚类
+    std::vector<PtCdtr<PointT>> cluster(PtCdtr<PointT> cloud, float clusterTolerance, int minSize, int maxSize);
+    
 };
-
 
 //*********************************************************************************************
 template<typename PointT>
@@ -141,4 +144,26 @@ PtCdtr<PointT> ProcessPointClouds<PointT>::cloud_filter(PtCdtr<PointT> cloud_in,
     return segment_resultPair.first;
 };
 
- 
+template<typename PointT>
+std::vector<PtCdtr<PointT>> ProcessPointClouds<PointT>::cluster(PtCdtr<PointT> cloud, float clusterTolerance, int minSize, int maxSize){
+    std::vector<PtCdtr<PointT>> clusters;
+    typename pcl::search::KdTree<PointT>::Ptr kdtree;
+    kdtree->setInputCloud(cloud);
+
+    std::vector<pcl::PointIndices> cluster_ind;
+    pcl::EuclideanClusterExtraction<PointT> eucliCluster;
+    eucliCluster.setClusterTolerance(clusterTolerance);
+    eucliCluster.setMaxClusterSize(maxSize);
+    eucliCluster.setMinClusterSize(minSize);
+    eucliCluster.setSearchMethod(kdtree);
+    eucliCluster.setInputCloud(cloud);
+    eucliCluster.extract(cluster_ind);
+
+    for(auto pointIndices_i:cluster_ind){
+        pcl::PointIndices::Ptr pointIndicesPtr_i(new pcl::PointIndices(pointIndices_i));
+        std::pair<PtCdtr<PointT>, PtCdtr<PointT>> segment_resultPair = segment_Indices(cloud ,pointIndicesPtr_i);  
+        clusters.push_back(segment_resultPair.first);
+    }
+    return clusters;
+    
+};
