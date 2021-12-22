@@ -2,7 +2,7 @@
  * @Description: 
  * @Author: yurui
  * @Date: 2021-12-18 13:32:56
- * @LastEditTime: 2021-12-20 14:45:40
+ * @LastEditTime: 2021-12-22 15:31:37
  * @FilePath: /Lidar/include/processPointClouds.hpp
  */
 #pragma once
@@ -18,6 +18,8 @@
 #include <pcl-1.11/pcl/filters/crop_box.h>
 #include <pcl-1.11/pcl/search/kdtree.h>
 #include <pcl-1.11/pcl/segmentation/extract_clusters.h>
+#include <pcl-1.11/pcl/features/normal_3d.h>
+#include <pcl-1.11/pcl/segmentation/region_growing.h>
 #include <boost/thread/thread.hpp>
 #include <eigen3/Eigen/Dense>
 #include <memory>
@@ -28,6 +30,8 @@
 template<typename PointT>
 using PtCdtr = typename pcl::PointCloud<PointT>::Ptr;
 
+using PtCdNormtr = typename pcl::PointCloud<pcl::Normal>::Ptr;
+
 template<typename PointT>
 class ProcessPointClouds{
 public:
@@ -36,15 +40,26 @@ public:
     void numPoints(PtCdtr<PointT> cloud);
     PtCdtr<PointT> loadPcd(std::string file);
     std::vector<boost::filesystem::path> streamPcd(std::string dataPath);
+    // 将聚类的PointIndices索引容器转为PointCloud容器
+    std::vector<PtCdtr<PointT>> ind2cloud(PtCdtr<PointT> cloud, std::vector<pcl::PointIndices>& cluster_ind);
+    // 两个点云索引vector中交集索引数量
+    int intersectVertor(std::vector<int>& v1, std::vector<int>& v2);
     //todo 滤波，分割，聚类，拟合..
     //对ROI感兴趣区域进行focus，体素最近点滤波
-    PtCdtr<PointT> cloud_filter(PtCdtr<PointT> cloud_in, float leaf_size, Eigen::Vector4f minPoint, Eigen::Vector4f maxPoint);
+    std::pair<PtCdtr<PointT>, PtCdtr<PointT>> roi_filter(PtCdtr<PointT> cloud_in, Eigen::Vector4f minPoint, Eigen::Vector4f maxPoint, std::vector<int>& indices, std::vector<int>& roni_indices);
+    std::pair<PtCdtr<PointT>, PtCdtr<PointT>> roi_filter(PtCdtr<PointT> cloud_in, Eigen::Vector4f minPoint, Eigen::Vector4f maxPoint);
+    PtCdtr<PointT> voxel_filter(PtCdtr<PointT> cloud_in, float leaf_size);
     // 平面分割
     std::pair<PtCdtr<PointT>, PtCdtr<PointT>> segment_Plane(PtCdtr<PointT> cloud, int maxIterations, float distanceThreshold);
+    // 根据索引进行分割，first为索引内点， second为索引外点
     std::pair<PtCdtr<PointT>, PtCdtr<PointT>> segment_Indices(PtCdtr<PointT> cloud, pcl::PointIndices::Ptr ind);
-    // 点云聚类
-    std::vector<PtCdtr<PointT>> cluster(PtCdtr<PointT> cloud, float clusterTolerance, int minSize, int maxSize);
-    
+    // 欧拉点云聚类,得到聚类索引
+    std::vector<pcl::PointIndices> cluster(PtCdtr<PointT> cloud, float clusterTolerance, int minSize, int maxSize);
+    // 点云法向量
+    pcl::PointCloud <pcl::Normal>::Ptr normalExtractor(PtCdtr<PointT> cloud, float radius);
+    // 区域生长聚类
+    // nearPoints临近点的个数，CurvatureThreshold曲率的阈值，SmoothnessThreshold法线差值阈值
+    std::vector<pcl::PointIndices> regionGrown(PtCdtr<PointT> cloud, int nearPoints,int minSize, int maxSize, float CurvatureThreshold, float SmoothnessThreshold, PtCdNormtr normals);
 };
 
 //*********************************************************************************************
@@ -72,6 +87,35 @@ std::vector<boost::filesystem::path> ProcessPointClouds<PointT>::streamPcd(std::
     sort(paths.begin(), paths.end());
     return paths;
 };
+
+// 将聚类的PointIndices索引容器转为PointCloud容器
+template<typename PointT>
+std::vector<PtCdtr<PointT>> ProcessPointClouds<PointT>::ind2cloud(PtCdtr<PointT> cloud ,std::vector<pcl::PointIndices>& cluster_ind){
+    std::vector<PtCdtr<PointT>> clusters;
+    for(auto pointIndices_i:cluster_ind){
+        pcl::PointIndices::Ptr pointIndicesPtr_i(new pcl::PointIndices(pointIndices_i));
+        std::pair<PtCdtr<PointT>, PtCdtr<PointT>> segment_resultPair = segment_Indices(cloud, pointIndicesPtr_i);  
+        clusters.push_back(segment_resultPair.first);
+    }
+    return clusters;
+}
+
+// 两个点云索引vector中交集索引数量
+template<typename PointT>
+int ProcessPointClouds<PointT>::intersectVertor(std::vector<int>& v1, std::vector<int>& v2){
+    
+    int insect_count = 0;
+    // 对vector进行元素排序
+    std::sort(v1.begin(), v1.end());
+    std::sort(v2.begin(), v2.end());
+    std::vector<int> vector_insect;
+    vector_insect.resize(std::min<int>(v1.size(), v2.size()));
+    std::vector<int>::iterator itEnd = std::set_intersection(v1.begin(), v1.end(),v2.begin(),v2.end(),vector_insect.begin());
+    for(auto it = vector_insect.begin(); it != itEnd; it++){
+        insect_count++;
+    };
+    return insect_count;
+}
 
 // 根据索引进行分割，first为索引点， second为索引外点
 template<typename PointT>
@@ -109,49 +153,84 @@ std::pair<PtCdtr<PointT>, PtCdtr<PointT>> ProcessPointClouds<PointT>::segment_Pl
     return segment_resultPair; 
 };
 
-// 点云预处理：ROI滤波，体素就近滤波
+
+// ROI滤波: focus the region of interest. first为roi区域，second为roni区域
 template<typename PointT>
-PtCdtr<PointT> ProcessPointClouds<PointT>::cloud_filter(PtCdtr<PointT> cloud_in, float leaf_size, Eigen::Vector4f minPoint, Eigen::Vector4f maxPoint){
+std::pair<PtCdtr<PointT>, PtCdtr<PointT>> 
+ProcessPointClouds<PointT>::roi_filter(PtCdtr<PointT> cloud_in, Eigen::Vector4f minPoint, Eigen::Vector4f maxPoint, std::vector<int>& roi_indices, std::vector<int>& roni_indices){
     // ROI滤波
-    PtCdtr<PointT> cloudRegion(new pcl::PointCloud<PointT>);
+    PtCdtr<PointT> roi_cloud(new pcl::PointCloud<PointT>);
+    PtCdtr<PointT> roni_cloud(new pcl::PointCloud<PointT>);
     pcl::CropBox<PointT> region;
     region.setMin(minPoint);
     region.setMax(maxPoint);
     region.setInputCloud(cloud_in);
-    region.filter(*cloudRegion);
+    region.setNegative(false);
+    region.filter(*roi_cloud);
+    region.filter(roi_indices);
+
+    region.setNegative(true);
+    region.filter(*roni_cloud);
+    region.filter(roni_indices);
+
+    std::pair<PtCdtr<PointT>, PtCdtr<PointT>> roiResultPair(roi_cloud, roni_cloud);
+    return roiResultPair;
+};
+// ROI滤波重载
+template<typename PointT>
+std::pair<PtCdtr<PointT>, PtCdtr<PointT>> 
+ProcessPointClouds<PointT>::roi_filter(PtCdtr<PointT> cloud_in, Eigen::Vector4f minPoint, Eigen::Vector4f maxPoint){
+    // ROI滤波
+    PtCdtr<PointT> roi_cloud(new pcl::PointCloud<PointT>);
+    PtCdtr<PointT> roni_cloud(new pcl::PointCloud<PointT>);
+
+    pcl::CropBox<PointT> region;
+    region.setMin(minPoint);
+    region.setMax(maxPoint);
+    region.setInputCloud(cloud_in);
+    region.setNegative(false);
+    region.filter(*roi_cloud);
+    region.setNegative(true);
+    region.filter(*roni_cloud);
+
+    std::pair<PtCdtr<PointT>, PtCdtr<PointT>> roiResultPair(roi_cloud, roni_cloud);
+    return roiResultPair;
+};
+
+// 点云预处理: 体素就近滤波
+template<typename PointT>
+PtCdtr<PointT> ProcessPointClouds<PointT>::voxel_filter(PtCdtr<PointT> cloud_in, float leaf_size){
 
     // 体素就近滤波
     PtCdtr<PointT> cloud_out(new pcl::PointCloud<PointT>);
     pcl::VoxelGrid<PointT> voxel;
-    voxel.setInputCloud(cloudRegion); 
+    voxel.setInputCloud(cloud_in); 
     voxel.setLeafSize(leaf_size, leaf_size, leaf_size);
     voxel.filter (*cloud_out);
 
     // kdtree寻找最近点代替理论重心
     pcl::PointIndices::Ptr ind(new pcl::PointIndices);
     pcl::KdTreeFLANN<PointT> kdtree;
-    kdtree.setInputCloud(cloudRegion);
+    kdtree.setInputCloud(cloud_in);
     int K = 1;
     for(auto search_point: *cloud_out){
-
         std::vector<int> pointId_KNNSearch;
         std::vector<float> sqrDistance_KNNSearch;
         if (kdtree.nearestKSearch(search_point, K, pointId_KNNSearch, sqrDistance_KNNSearch)>0 ){
             ind->indices.push_back(pointId_KNNSearch[0]);
         }
     }
-    std::pair<PtCdtr<PointT>, PtCdtr<PointT>> segment_resultPair = segment_Indices(cloudRegion, ind);
+    std::pair<PtCdtr<PointT>, PtCdtr<PointT>> segment_resultPair = segment_Indices(cloud_in, ind);
     return segment_resultPair.first;
 };
 
 // 欧拉聚类
 template<typename PointT>
-std::vector<PtCdtr<PointT>> ProcessPointClouds<PointT>::cluster(PtCdtr<PointT> cloud, float clusterTolerance, int minSize, int maxSize){
-    std::vector<PtCdtr<PointT>> clusters;
-    typename pcl::search::KdTree<PointT>::Ptr kdtree;
+std::vector<pcl::PointIndices> ProcessPointClouds<PointT>::cluster(PtCdtr<PointT> cloud, float clusterTolerance, int minSize, int maxSize){
+    std::vector<pcl::PointIndices> cluster_ind;
+    typename pcl::search::KdTree<PointT>::Ptr kdtree(new pcl::search::KdTree<PointT>);
     kdtree->setInputCloud(cloud);
 
-    std::vector<pcl::PointIndices> cluster_ind;
     pcl::EuclideanClusterExtraction<PointT> eucliCluster;
     eucliCluster.setClusterTolerance(clusterTolerance);
     eucliCluster.setMaxClusterSize(maxSize);
@@ -159,12 +238,38 @@ std::vector<PtCdtr<PointT>> ProcessPointClouds<PointT>::cluster(PtCdtr<PointT> c
     eucliCluster.setSearchMethod(kdtree);
     eucliCluster.setInputCloud(cloud);
     eucliCluster.extract(cluster_ind);
-
-    for(auto pointIndices_i:cluster_ind){
-        pcl::PointIndices::Ptr pointIndicesPtr_i(new pcl::PointIndices(pointIndices_i));
-        std::pair<PtCdtr<PointT>, PtCdtr<PointT>> segment_resultPair = segment_Indices(cloud ,pointIndicesPtr_i);  
-        clusters.push_back(segment_resultPair.first);
-    }
-    return clusters;
+    return cluster_ind;
     
 };
+
+// 点云法向量
+template<typename PointT>
+PtCdNormtr ProcessPointClouds<PointT>::normalExtractor(PtCdtr<PointT> cloud, float radius){
+        typename pcl::search::KdTree<PointT>::Ptr kdtree(new pcl::search::KdTree<PointT>);
+        PtCdNormtr normals(new pcl::PointCloud<pcl::Normal>);
+        pcl::NormalEstimation<PointT, pcl::Normal> n;
+
+        n.setSearchMethod(kdtree);
+        n.setInputCloud(cloud);
+        n.setRadiusSearch(radius);
+        n.compute(*normals);
+
+        return normals;
+    }
+// 区域生长聚类
+template<typename PointT>
+std::vector<pcl::PointIndices> ProcessPointClouds<PointT>::regionGrown(PtCdtr<PointT> cloud, int nearPoints,int minSize, int maxSize, float CurvatureThreshold, float SmoothnessThreshold, PtCdNormtr normals){
+        typename pcl::search::KdTree<PointT>::Ptr kdtree(new pcl::search::KdTree<PointT>);
+        std::vector<pcl::PointIndices> cluster_ind;
+        pcl::RegionGrowing<PointT, pcl::Normal> reg;
+        reg.setInputCloud(cloud);
+        reg.setInputNormals(normals);
+        reg.setMinClusterSize(minSize);
+        reg.setMaxClusterSize(maxSize);
+        reg.setSearchMethod(kdtree);
+        reg.setNumberOfNeighbours(nearPoints);
+        reg.setCurvatureThreshold(CurvatureThreshold);
+        reg.setSmoothnessThreshold(SmoothnessThreshold);
+        reg.extract(cluster_ind);
+        return cluster_ind;
+    }
