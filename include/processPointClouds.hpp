@@ -2,7 +2,7 @@
  * @Description: 
  * @Author: yurui
  * @Date: 2021-12-18 13:32:56
- * @LastEditTime: 2021-12-20 14:41:36
+ * @LastEditTime: 2021-12-20 14:45:40
  * @FilePath: /Lidar/include/processPointClouds.hpp
  */
 #pragma once
@@ -144,6 +144,7 @@ PtCdtr<PointT> ProcessPointClouds<PointT>::cloud_filter(PtCdtr<PointT> cloud_in,
     return segment_resultPair.first;
 };
 
+// 欧拉聚类
 template<typename PointT>
 std::vector<PtCdtr<PointT>> ProcessPointClouds<PointT>::cluster(PtCdtr<PointT> cloud, float clusterTolerance, int minSize, int maxSize){
     std::vector<PtCdtr<PointT>> clusters;
