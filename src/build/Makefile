@@ -129,6 +129,30 @@ environment/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/environment.dir/build.make CMakeFiles/environment.dir/build
 .PHONY : environment/fast
 
+box.o: box.cpp.o
+.PHONY : box.o
+
+# target to build an object file
+box.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/environment.dir/build.make CMakeFiles/environment.dir/box.cpp.o
+.PHONY : box.cpp.o
+
+box.i: box.cpp.i
+.PHONY : box.i
+
+# target to preprocess a source file
+box.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/environment.dir/build.make CMakeFiles/environment.dir/box.cpp.i
+.PHONY : box.cpp.i
+
+box.s: box.cpp.s
+.PHONY : box.s
+
+# target to generate assembly for a file
+box.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/environment.dir/build.make CMakeFiles/environment.dir/box.cpp.s
+.PHONY : box.cpp.s
+
 environment.o: environment.cpp.o
 .PHONY : environment.o
 
@@ -153,6 +177,30 @@ environment.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/environment.dir/build.make CMakeFiles/environment.dir/environment.cpp.s
 .PHONY : environment.cpp.s
 
+render.o: render.cpp.o
+.PHONY : render.o
+
+# target to build an object file
+render.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/environment.dir/build.make CMakeFiles/environment.dir/render.cpp.o
+.PHONY : render.cpp.o
+
+render.i: render.cpp.i
+.PHONY : render.i
+
+# target to preprocess a source file
+render.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/environment.dir/build.make CMakeFiles/environment.dir/render.cpp.i
+.PHONY : render.cpp.i
+
+render.s: render.cpp.s
+.PHONY : render.s
+
+# target to generate assembly for a file
+render.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/environment.dir/build.make CMakeFiles/environment.dir/render.cpp.s
+.PHONY : render.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -162,9 +210,15 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... environment"
+	@echo "... box.o"
+	@echo "... box.i"
+	@echo "... box.s"
 	@echo "... environment.o"
 	@echo "... environment.i"
 	@echo "... environment.s"
+	@echo "... render.o"
+	@echo "... render.i"
+	@echo "... render.s"
 .PHONY : help
 
 

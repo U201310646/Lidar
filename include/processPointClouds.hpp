@@ -2,7 +2,7 @@
  * @Description: 
  * @Author: yurui
  * @Date: 2021-12-18 13:32:56
- * @LastEditTime: 2021-12-22 15:31:37
+ * @LastEditTime: 2021-12-23 11:33:04
  * @FilePath: /Lidar/include/processPointClouds.hpp
  */
 #pragma once
@@ -20,12 +20,14 @@
 #include <pcl-1.11/pcl/segmentation/extract_clusters.h>
 #include <pcl-1.11/pcl/features/normal_3d.h>
 #include <pcl-1.11/pcl/segmentation/region_growing.h>
+#include <pcl-1.11/pcl/common/common.h>
 #include <boost/thread/thread.hpp>
 #include <eigen3/Eigen/Dense>
 #include <memory>
 #include <string>
 #include <vector>
 #include <algorithm>
+#include "box.h"
 
 template<typename PointT>
 using PtCdtr = typename pcl::PointCloud<PointT>::Ptr;
@@ -44,10 +46,10 @@ public:
     std::vector<PtCdtr<PointT>> ind2cloud(PtCdtr<PointT> cloud, std::vector<pcl::PointIndices>& cluster_ind);
     // 两个点云索引vector中交集索引数量
     int intersectVertor(std::vector<int>& v1, std::vector<int>& v2);
-    //todo 滤波，分割，聚类，拟合..
-    //对ROI感兴趣区域进行focus，体素最近点滤波
+    // 对ROI感兴趣区域进行focus
     std::pair<PtCdtr<PointT>, PtCdtr<PointT>> roi_filter(PtCdtr<PointT> cloud_in, Eigen::Vector4f minPoint, Eigen::Vector4f maxPoint, std::vector<int>& indices, std::vector<int>& roni_indices);
     std::pair<PtCdtr<PointT>, PtCdtr<PointT>> roi_filter(PtCdtr<PointT> cloud_in, Eigen::Vector4f minPoint, Eigen::Vector4f maxPoint);
+    // 体素就近点滤波
     PtCdtr<PointT> voxel_filter(PtCdtr<PointT> cloud_in, float leaf_size);
     // 平面分割
     std::pair<PtCdtr<PointT>, PtCdtr<PointT>> segment_Plane(PtCdtr<PointT> cloud, int maxIterations, float distanceThreshold);
@@ -55,14 +57,18 @@ public:
     std::pair<PtCdtr<PointT>, PtCdtr<PointT>> segment_Indices(PtCdtr<PointT> cloud, pcl::PointIndices::Ptr ind);
     // 欧拉点云聚类,得到聚类索引
     std::vector<pcl::PointIndices> cluster(PtCdtr<PointT> cloud, float clusterTolerance, int minSize, int maxSize);
+    // 删除聚类中聚类索引与其他索引集合交集数大于阈值的聚类（例如： 与非roi区域有一定交集的聚类会被整体删除）
+    void clusterFilter(std::vector<pcl::PointIndices>& cluster_ind, std::vector<int>& indices, int insectThreshold);
     // 点云法向量
     pcl::PointCloud <pcl::Normal>::Ptr normalExtractor(PtCdtr<PointT> cloud, float radius);
     // 区域生长聚类
     // nearPoints临近点的个数，CurvatureThreshold曲率的阈值，SmoothnessThreshold法线差值阈值
     std::vector<pcl::PointIndices> regionGrown(PtCdtr<PointT> cloud, int nearPoints,int minSize, int maxSize, float CurvatureThreshold, float SmoothnessThreshold, PtCdNormtr normals);
-};
+    // 获取聚类边界框
+    Box boundingBox(PtCdtr<PointT> cluster);
+};  
 
-//*********************************************************************************************
+//-------------------------------------------------------------------------------------------------------------------------
 template<typename PointT>
 PtCdtr<PointT> ProcessPointClouds<PointT>::loadPcd(std::string file){
     PtCdtr<PointT> cloud(new pcl::PointCloud<PointT>);
@@ -241,7 +247,19 @@ std::vector<pcl::PointIndices> ProcessPointClouds<PointT>::cluster(PtCdtr<PointT
     return cluster_ind;
     
 };
-
+// 删除聚类中聚类索引与其他索引集合交集数大于阈值的聚类（例如： 与非roi区域有一定交集的聚类会被整体删除）
+template<typename PointT>
+void ProcessPointClouds<PointT>::clusterFilter(std::vector<pcl::PointIndices>& cluster_ind, std::vector<int>& indices, int insectThreshold){
+    for (auto it = cluster_ind.begin(); it != cluster_ind.end(); it++)
+    {
+        int insect_count = intersectVertor(it->indices, indices);
+        if (insect_count > insectThreshold)
+        {
+            it = cluster_ind.erase(it);
+            it--;
+        }
+    }
+}
 // 点云法向量
 template<typename PointT>
 PtCdNormtr ProcessPointClouds<PointT>::normalExtractor(PtCdtr<PointT> cloud, float radius){
@@ -269,7 +287,24 @@ std::vector<pcl::PointIndices> ProcessPointClouds<PointT>::regionGrown(PtCdtr<Po
         reg.setSearchMethod(kdtree);
         reg.setNumberOfNeighbours(nearPoints);
         reg.setCurvatureThreshold(CurvatureThreshold);
-        reg.setSmoothnessThreshold(SmoothnessThreshold);
+        reg.setSmoothnessThreshold(SmoothnessThreshold / 180.0 * M_PI);
         reg.extract(cluster_ind);
         return cluster_ind;
     }
+
+template<typename PointT>
+Box ProcessPointClouds<PointT>::boundingBox(PtCdtr<PointT> cluster) {
+
+    // Find bounding box for one of the clusters
+    PointT minPoint, maxPoint;
+    pcl::getMinMax3D(*cluster, minPoint, maxPoint);
+    Box box;
+    box.x_min = minPoint.x;
+    box.y_min = minPoint.y;
+    box.z_min = minPoint.z;
+    box.x_max = maxPoint.x;
+    box.y_max = maxPoint.y;
+    box.z_max = maxPoint.z;
+    return box;
+}
+
