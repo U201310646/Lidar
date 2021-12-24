@@ -3,8 +3,6 @@ file(REMOVE_RECURSE
   "CMakeFiles/environment.dir/box.cpp.o.d"
   "CMakeFiles/environment.dir/environment.cpp.o"
   "CMakeFiles/environment.dir/environment.cpp.o.d"
-  "CMakeFiles/environment.dir/render.cpp.o"
-  "CMakeFiles/environment.dir/render.cpp.o.d"
   "environment"
   "environment.pdb"
 )

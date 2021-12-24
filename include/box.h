@@ -2,7 +2,7 @@
  * @Description: 
  * @Author: yurui
  * @Date: 2021-12-22 16:05:19
- * @LastEditTime: 2021-12-22 19:24:46
+ * @LastEditTime: 2021-12-23 15:06:47
  * @FilePath: /Lidar/include/box.h
  */
 #pragma once
@@ -39,4 +39,4 @@ struct Box
 	float volume;
 };
 
-void boxRender(pcl::visualization::PCLVisualizer::Ptr viewer, int cluster_id, Box box, int v);
+void boxRender(pcl::visualization::PCLVisualizer::Ptr viewer, int cluster_id, Box box, int v=0);

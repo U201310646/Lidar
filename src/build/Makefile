@@ -177,30 +177,6 @@ environment.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/environment.dir/build.make CMakeFiles/environment.dir/environment.cpp.s
 .PHONY : environment.cpp.s
 
-render.o: render.cpp.o
-.PHONY : render.o
-
-# target to build an object file
-render.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/environment.dir/build.make CMakeFiles/environment.dir/render.cpp.o
-.PHONY : render.cpp.o
-
-render.i: render.cpp.i
-.PHONY : render.i
-
-# target to preprocess a source file
-render.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/environment.dir/build.make CMakeFiles/environment.dir/render.cpp.i
-.PHONY : render.cpp.i
-
-render.s: render.cpp.s
-.PHONY : render.s
-
-# target to generate assembly for a file
-render.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/environment.dir/build.make CMakeFiles/environment.dir/render.cpp.s
-.PHONY : render.cpp.s
-
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -216,9 +192,6 @@ help:
 	@echo "... environment.o"
 	@echo "... environment.i"
 	@echo "... environment.s"
-	@echo "... render.o"
-	@echo "... render.i"
-	@echo "... render.s"
 .PHONY : help
 
 

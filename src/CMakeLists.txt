@@ -10,5 +10,5 @@ add_definitions(${PCL_DEFINITIONS})
 
 include_directories(/home/cyr/Documents/cppProject/LidarProjects/Lidar/include)
 
-add_executable (environment box.cpp render.cpp environment.cpp)
+add_executable (environment box.cpp environment.cpp)
 target_link_libraries (environment jsoncpp ${THREAD} ${PCL_LIBRARIES})
