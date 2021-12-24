@@ -2,7 +2,7 @@
  * @Description: 
  * @Author: yurui
  * @Date: 2021-12-18 13:32:56
- * @LastEditTime: 2021-12-23 11:33:04
+ * @LastEditTime: 2021-12-24 13:24:57
  * @FilePath: /Lidar/include/processPointClouds.hpp
  */
 #pragma once
@@ -52,7 +52,7 @@ public:
     // 体素就近点滤波
     PtCdtr<PointT> voxel_filter(PtCdtr<PointT> cloud_in, float leaf_size);
     // 平面分割
-    std::pair<PtCdtr<PointT>, PtCdtr<PointT>> segment_Plane(PtCdtr<PointT> cloud, int maxIterations, float distanceThreshold);
+    std::pair<PtCdtr<PointT>, PtCdtr<PointT>> segment_Plane(PtCdtr<PointT> cloud, int maxIterations, float distanceThreshold, pcl::ModelCoefficients::Ptr coefficient = std::make_shared<pcl::ModelCoefficients>());
     // 根据索引进行分割，first为索引内点， second为索引外点
     std::pair<PtCdtr<PointT>, PtCdtr<PointT>> segment_Indices(PtCdtr<PointT> cloud, pcl::PointIndices::Ptr ind);
     // 欧拉点云聚类,得到聚类索引
@@ -141,9 +141,8 @@ std::pair<PtCdtr<PointT>, PtCdtr<PointT>> ProcessPointClouds<PointT>::segment_In
 
 // 平面分割，返回pair， first在模型内点，second模型外点
 template<typename PointT>
-std::pair<PtCdtr<PointT>, PtCdtr<PointT>> ProcessPointClouds<PointT>::segment_Plane(PtCdtr<PointT> cloud, int maxIterations, float distanceThreshold){
+std::pair<PtCdtr<PointT>, PtCdtr<PointT>> ProcessPointClouds<PointT>::segment_Plane(PtCdtr<PointT> cloud, int maxIterations, float distanceThreshold, pcl::ModelCoefficients::Ptr coefficient){
     pcl::PointIndices::Ptr ind(new pcl::PointIndices);
-    pcl::ModelCoefficients::Ptr coefficient(new pcl::ModelCoefficients);
     pcl::SACSegmentation<PointT> segments;
     segments.setOptimizeCoefficients(true);
     segments.setMaxIterations(maxIterations);
