@@ -2,7 +2,7 @@
  * @Description: 
  * @Author: yurui
  * @Date: 2021-12-24 10:24:56
- * @LastEditTime: 2021-12-24 10:36:14
+ * @LastEditTime: 2021-12-24 15:34:36
  * @FilePath: /Lidar/src/environment.cpp
  */
 
@@ -33,8 +33,8 @@ void detector(pcl::visualization::PCLVisualizer::Ptr viewer, ProcessPointClouds<
     int maxsize = 10000;
     // 聚类中在roni中的点数大于cluster_roni_points则删除整个聚类
     int cluster_roni_points = 0;
-    // 法向量
-    float radius = 0.05;
+    // 法向量,领域点搜索
+    float radius;
     // 区域生长聚类
     int nearPoints = 30;
     int minsize_rg = 10;

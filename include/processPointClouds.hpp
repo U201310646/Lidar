@@ -2,7 +2,7 @@
  * @Description: 
  * @Author: yurui
  * @Date: 2021-12-18 13:32:56
- * @LastEditTime: 2021-12-24 13:24:57
+ * @LastEditTime: 2021-12-24 15:34:06
  * @FilePath: /Lidar/include/processPointClouds.hpp
  */
 #pragma once
@@ -265,9 +265,9 @@ PtCdNormtr ProcessPointClouds<PointT>::normalExtractor(PtCdtr<PointT> cloud, flo
         typename pcl::search::KdTree<PointT>::Ptr kdtree(new pcl::search::KdTree<PointT>);
         PtCdNormtr normals(new pcl::PointCloud<pcl::Normal>);
         pcl::NormalEstimation<PointT, pcl::Normal> n;
-
         n.setSearchMethod(kdtree);
         n.setInputCloud(cloud);
+        // n.setKSearch(k);
         n.setRadiusSearch(radius);
         n.compute(*normals);
 
