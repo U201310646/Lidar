@@ -216,4 +216,3 @@ if __name__ == '__main__':
     cv2.imwrite('/media/yhserver/DATA1/point_cloud/tool_pcd/var_100.jpg', var)
     cv2.waitKey(-1)
     cv2.destroyAllWindows()
-    
