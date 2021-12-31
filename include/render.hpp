@@ -2,7 +2,7 @@
  * @Description: 
  * @Author: yurui
  * @Date: 2021-12-23 09:44:11
- * @LastEditTime: 2021-12-23 15:46:13
+ * @LastEditTime: 2021-12-27 16:19:28
  * @FilePath: /Lidar/include/render.hpp
  */
 
@@ -36,8 +36,7 @@ void renderClusterBox(pcl::visualization::PCLVisualizer::Ptr viewer, ProcessPoin
 
 // 显示点云
 template <typename PointT>
-void renderCloud(pcl::visualization::PCLVisualizer::Ptr viewer, typename pcl::PointCloud<PointT>::Ptr cloud, Color color, std::string name);
-
+void renderCloud(pcl::visualization::PCLVisualizer::Ptr viewer, typename pcl::PointCloud<PointT>::Ptr cloud, Color color, std::string name, int v=0);
 
 //----------------------------------------------------------------------------------------------------------------------------------------
 void initCamera(pcl::visualization::PCLVisualizer::Ptr viewer, Eigen::VectorXf &posVector)
@@ -78,10 +77,10 @@ void renderClusterBox(pcl::visualization::PCLVisualizer::Ptr viewer, ProcessPoin
 
 // 显示点云
 template <typename PointT>
-void renderCloud(pcl::visualization::PCLVisualizer::Ptr viewer, typename pcl::PointCloud<PointT>::Ptr cloud, Color color, std::string name)
+void renderCloud(pcl::visualization::PCLVisualizer::Ptr viewer, typename pcl::PointCloud<PointT>::Ptr cloud, Color color, std::string name, int v)
 {
     pcl::visualization::PointCloudColorHandlerCustom<PointT> rgb(cloud, color.r, color.g, color.b);
-    viewer->addPointCloud(cloud, rgb, name);
+    viewer->addPointCloud(cloud, rgb, name, v);
 }
 
 
