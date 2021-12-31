@@ -51,7 +51,7 @@ def mean_and_var_of_grids(num_of_points,points_of_grids,dim=2):
 if __name__ == '__main__':
     
         
-    pcd_path = './plane_cloud.pcd'
+    pcd_path = "/home/cyr/Documents/cppProject/LidarProjects/Lidar/edge/plane_cloud.pcd"
 
     point_data = read_pcd(pcd_path,4)
 
