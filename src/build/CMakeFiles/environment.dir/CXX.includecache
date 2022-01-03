@@ -1,0 +1,12 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/cyr/Documents/cppProject/LidarProjects/Lidar/src/box.cpp
+
+/home/cyr/Documents/cppProject/LidarProjects/Lidar/src/environment.cpp
+
