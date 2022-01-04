@@ -115,4 +115,5 @@
         "FilePath":"Do not edit",
         "custom_string_obkoro1_copyright": "Copyright (C) ${now_year} yurui. All rights reserved.",
     },
+    "python.formatting.provider": "black",
 }
