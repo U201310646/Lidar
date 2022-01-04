@@ -65,5 +65,54 @@
         "variant": "cpp",
         "unordered_set": "cpp"
     },
-    "C_Cpp.errorSquiggles": "Disabled"
+    "C_Cpp.errorSquiggles": "Disabled",
+    "fileheader.LastModifiedBy": "yurui",
+    "fileheader.Author": "yurui",
+    "fileheader.configObj": {
+
+        "moveCursor":true,
+        "createHeader":true,
+        "wideSame":true,
+        "wideNum":13,
+        "autoAdd":true,
+        "autoAlready":true,
+        "createFileTime": true,
+        "prohibitAutoAdd":["json","md"],
+        "filePathColon":"\\\\",
+        "beforeAnnotation": {
+            "py": "# !usr/bin/env python\n# -*- coding:utf-8 -*-\n"
+        },
+
+        "language": {
+            "h/c/hpp/cpp": {
+                "head": "/*************************************************************************************",
+                "middle": " * ",
+                "end": " *************************************************************************************/"
+            },
+            "py": {
+                "head": "'''",
+                "middle": " ",
+                "end": "'''"
+            }
+        },
+    },
+
+    // 在光标处插入函数注释,默认配置:{'description':'','param':'','return':''}
+    "fileheader.cursorMode": {
+        "description":"",
+        "param":"",
+        "return":""
+    },
+
+    // 头部注释,默认设置：{'Author':'your name','Date':'Do not edit','LastEditors':'your name','LastEditTime':'Do not edit','Description':'file content'}
+    "fileheader.customMade": {
+        "Description":"",
+        "Version":"1.0",
+        "Author":"yurui",
+        "Date":"Do not edit",
+        "LastEditors":"yurui",
+        "LastEditTime":"Do not edit",
+        "FilePath":"Do not edit",
+        "custom_string_obkoro1_copyright": "Copyright (C) ${now_year} yurui. All rights reserved.",
+    },
 }
